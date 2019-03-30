@@ -3,10 +3,11 @@ This is a bash.py script to get used to the new MeterDataSource format of
 extracting meter data from EL
 '''
 
-from utils.downloader import MeterDataSource
+# from utils.downloader import MeterDataSource
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.cluster import DBSCAN
+from sklearn.cluster import AffinityPropagation
 import pandas as pd
 import re
 import math
@@ -51,6 +52,7 @@ def normalise_values(df):
         norm.append((val-amin) / (amax-amin))
 
     df['norm_vals'] = norm
+    # df['norm_vals'] = values # Sometimes it seems better to use the actual real power values
     # print norm
     return df
 
@@ -67,16 +69,19 @@ def plot_stuff(df):
 def new_plot_stuff(df):
     x0 = []
     x1 = []
-    y0 = []
-    y1 = []
-    z0 = []
-    z1 = []
     x2 = []
     x3 = []
+    x4 = []
+    y0 = []
+    y1 = []
     y2 = []
     y3 = []
+    y4 = []
+    z0 = []
+    z1 = []
     z2 = []
     z3 = []
+    z4 = []
 
     for index, row in df.iterrows():
         if row['cluster_num'] == 0:
@@ -95,20 +100,23 @@ def new_plot_stuff(df):
             x3.append(row['time_x'])
             y3.append(row['time_y'])
             z3.append(row['norm_vals'])
-
-
+        elif row['cluster_num'] == 4:
+            x4.append(row['time_x'])
+            y4.append(row['time_y'])
+            z4.append(row['norm_vals'])
 
     fig = pyplot.figure()
     ax = Axes3D(fig)
-    ax.scatter(x0, y0, z0)
-    ax.scatter(x1, y1, z1)
-    ax.scatter(x2, y2, z2)
-    ax.scatter(x3, y3, z3)
+    ax.scatter(x0, y0, z0, c='g')
+    ax.scatter(x1, y1, z1, c='b')
+    ax.scatter(x2, y2, z2, c='r')
+    ax.scatter(x3, y3, z3, c='y')
+    ax.scatter(x4, y4, z4, c='m')
     pyplot.show()
 
 def main():
 
-    raw_pandas = get_data('test_data55.csv')
+    raw_pandas = get_data('test_rhac.csv')
     # print raw_pandas
     print 'raw pandas collected'
 
@@ -122,17 +130,23 @@ def main():
     norm_pandas.drop('Value', 1, inplace=True)
     print 'values are normalised'
 
+    ''' Affinity Propogation Clustiner'''
+    affprop = AffinityPropagation().fit(norm_pandas.values)
+    labels = affprop.labels_
+    print labels
+
+    ''' DBScan Clustering'''
     # dbscan = DBSCAN(eps=0.4).fit(norm_pandas.values)
     # labels = dbscan.labels_
     # print len(labels)
     # print labels
 
-
-    kmeans = KMeans(n_clusters=2, random_state=0, init='random').fit(norm_pandas.values)
-    labels = kmeans.labels_
-    inertia = kmeans.inertia_
-    print labels
-    print inertia
+    ''' Kmeans Clustering'''
+    # kmeans = KMeans(n_clusters=2, random_state=0, init='k-means++').fit(norm_pandas.values)
+    # labels = kmeans.labels_
+    # inertia = kmeans.inertia_
+    # print labels
+    # print inertia
 
     norm_pandas['cluster_num'] = labels
     # print norm_pandas
